@@ -4,6 +4,20 @@ import { default as Audio    } from './audio.js'
 
 var shader = importText("wsgl.txt");
 
+var mouseX = null;
+var mouseY = null;
+var mouseDown = null;
+    
+document.addEventListener('mousemove', onMouseUpdate, false);
+document.addEventListener('mouseenter', onMouseUpdate, false);
+document.body.onmousedown = (e) => {mouseDown = 1;};
+document.body.onmouseup = (e) => {mouseDown = 0;};
+
+function onMouseUpdate(event) {
+  mouseX = event.pageX;
+  mouseY = event.pageY;
+}
+
 function importText(textFile) {
     var rawFile = new XMLHttpRequest();
     var allText = "";
@@ -38,8 +52,9 @@ async function main() {
     mouse:[0,0,0],
   })
   .onframe( ()=> {
-    sg.uniforms.frame = frame++ 
-    sg.uniforms.audio = [ Audio.low, Audio.mid, Audio.high ]
+    sg.uniforms.frame = frame++;
+    sg.uniforms.audio = [ Audio.low, Audio.mid, Audio.high ];
+    sg.uniforms.mouse = [ mouseX, mouseY, mouseDown];
   })
   .textures([ Video.element ]) 
   .render( shader, { uniforms: ['frame','res', 'audio', 'mouse' ] })
