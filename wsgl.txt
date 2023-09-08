@@ -17,5 +17,5 @@ fn fs( @builtin(position) pos : vec4f ) -> @location(0) vec4f {
   let vid = textureSampleBaseClampToEdge( videoBuffer, videoSampler, pos.xy / res );
   let fb  = textureSample( backBuffer, backSampler, pos.xy / res );
   let out = vid * .05 + fb * .95;
-  return vec4f( out.r, 0.,0. , 1. );
+  return vec4f( out.r, 0., out.b , 1. );
 }
