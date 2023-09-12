@@ -20,8 +20,7 @@ fn fs( @builtin(position) pos : vec4f ) -> @location(0) vec4f {
   var out: vec4f;
   if (mouse.z == 1)
   {
-      out = vec4f(1.0, 0., 0., 1.);
-      //out = vid * .75 + fb * .25;
+      out = vid * audio[0] + fb * (1. - audio[0]);
   }
   else
   {

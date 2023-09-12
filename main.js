@@ -2,8 +2,6 @@ import { default as seagulls } from './seagulls.js'
 import { default as Video    } from './video.js'
 import { default as Audio    } from './audio.js'
 
-var shader = importText("wsgl.txt");
-
 var mouseX = null;
 var mouseY = null;
 var mouseDown = null;
@@ -18,24 +16,6 @@ function onMouseUpdate(event) {
   mouseY = event.pageY;
 }
 
-function importText(textFile) {
-    var rawFile = new XMLHttpRequest();
-    var allText = "";
-    rawFile.open("Get", textFile, false);
-    rawFile.onreadystatechange = function()
-    {
-        if(rawFile.readyState === 4)
-        {
-            if(rawFile.status === 200 || rawFile.status == 0)
-            {
-                allText = rawFile.responseText;
-            }
-        }
-    }
-    rawFile.send(null);
-    return allText;
-}
-
 async function main() {
   let frame = 0
 
@@ -44,6 +24,7 @@ async function main() {
   await Video.init()
 
   const sg = await seagulls.init()
+  const frag = await seagulls.import( './frag.wgsl' );
 
   sg.uniforms({ 
     frame:0, 
@@ -55,9 +36,10 @@ async function main() {
     sg.uniforms.frame = frame++;
     sg.uniforms.audio = [ Audio.low, Audio.mid, Audio.high ];
     sg.uniforms.mouse = [ mouseX, mouseY, mouseDown];
+    console.log(Audio.low);
   })
   .textures([ Video.element ]) 
-  .render( shader, { uniforms: ['frame','res', 'audio', 'mouse' ] })
+  .render( frag )
   .run()
 }
 

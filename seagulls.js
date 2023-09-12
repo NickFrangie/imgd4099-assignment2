@@ -10,7 +10,14 @@ const CONSTANTS = {
 
   defaultStorageFlags : GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
 
-  workgroupSize: 8
+  workgroupSize: 8,
+
+  vertex:`@vertex 
+fn vs( @location(0) input : vec2f ) ->  @builtin(position) vec4f {
+  return vec4f( input, 0., 1.); 
+}
+
+`
 }
 
 // to "fix" inconsistencies with device.writeBuffer
@@ -18,7 +25,7 @@ const mult = navigator.userAgent.indexOf('Chrome') === -1 ? 4 : 1
 
 let backTexture = null
 const seagulls = {
-  CONSTANTS,
+  constants:CONSTANTS,
 
   async getDevice() {
     const adapter = await navigator.gpu?.requestAdapter()
@@ -55,6 +62,13 @@ const seagulls = {
     backTexture = seagulls.createTexture( device, format, canvas )
 
     return [ canvas, context, format ]
+  },
+
+  async import( file ) {
+    const f = await fetch( file )
+    const txt = await f.text()
+
+    return txt
   },
 
   createTexture( device, format, canvas ) {
@@ -722,13 +736,21 @@ const seagulls = {
     },
 
     render( shader, args ) {
-      let __uniforms = null
+      let __uniforms = {}
+      
+      // check to see if list of uniforms was passed
+      // if not assume all uniforms will be used
+      // in the fragment shader.
       if( args?.uniforms !== undefined ) {
-        __uniforms = {}
         for( let u of args.uniforms ) {
           __uniforms[ u ] = this.uniforms[ u ]
         }
+      }else{
+        for( let u of Object.getOwnPropertyNames( this.uniforms ) ) {
+          __uniforms[ u ] = this.uniforms[ u ]
+        }
       }
+
       if( Array.isArray( args?.pingpong ) ) {
         args.pingpong.forEach( key => {
           this.__buffers[ key ].pingpong = true
