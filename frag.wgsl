@@ -36,7 +36,7 @@ fn fs( @builtin(position) pos : vec4f ) -> @location(0) vec4f {
   let fract : vec2f = fract(sc);
   
   // Cellular Noise
-  var m_dist : f32 = 1.;
+  var m_dist : f32 = 10000.;
   var point_color : vec4f;
 
   if (mouse.z == 1.) {
