@@ -21,7 +21,7 @@ function onMouseUpdate(event) {
 async function main() {
   // Variables
   let time = 0;
-  const params = { timeScale: 1, mixer: .5, feedback: .05, mouseColor: { r:0, g:0, b:0  } }
+  const params = { timeScale: 1, camMixer: .95, camColor: .75, feedback: .8, mouseColor: { r:1, g:0, b:0  } }
   
   // Tweakpane
   const pane = new Pane();
@@ -29,8 +29,11 @@ async function main() {
     .addBinding(params, 'timeScale', { min: 0, max: 2 })
     .on('change',  e => { params.timeScale = e.value; })
   pane
-    .addBinding(params, 'mixer', { min: 0, max: 1 })
-    .on('change',  e => { sg.uniforms.mixer = e.value; })
+    .addBinding(params, 'camMixer', { min: 0, max: 1 })
+    .on('change',  e => { sg.uniforms.camMixer = e.value; })
+  pane
+    .addBinding(params, 'camColor', { min: 0, max: 1 })
+    .on('change',  e => { sg.uniforms.camColor = e.value; })
   pane
     .addBinding(params, 'feedback', { min: 0, max: 1 })
     .on('change',  e => { sg.uniforms.feedback = e.value; })
@@ -50,7 +53,8 @@ async function main() {
     res:[window.innerWidth, window.innerHeight],
     audio:[0,0,0],
     mouse:[0,0,0],
-    mixer: params.mixer,
+    camMixer: params.camMixer,
+    camColor: params.camColor,
     feedback: params.feedback,
     mouseColor: Object.values( params.mouseColor )
   })

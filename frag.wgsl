@@ -2,12 +2,13 @@
 @group(0) @binding(1) var<uniform> res:   vec2f;
 @group(0) @binding(2) var<uniform> audio: vec3f;
 @group(0) @binding(3) var<uniform> mouse: vec3f;
-@group(0) @binding(4) var<uniform> mixer: f32;
-@group(0) @binding(5) var<uniform> feedback: f32;
-@group(0) @binding(6) var<uniform> mouseColor: vec3f;
-@group(0) @binding(7) var backSampler:    sampler;
-@group(0) @binding(8) var backBuffer:     texture_2d<f32>;
-@group(0) @binding(9) var videoSampler:   sampler;
+@group(0) @binding(4) var<uniform> camMixer: f32;
+@group(0) @binding(5) var<uniform> camColor: f32;
+@group(0) @binding(6) var<uniform> feedback: f32;
+@group(0) @binding(7) var<uniform> mouseColor: vec3f;
+@group(0) @binding(8) var backSampler:    sampler;
+@group(0) @binding(9) var backBuffer:     texture_2d<f32>;
+@group(0) @binding(10) var videoSampler:   sampler;
 @group(1) @binding(0) var videoBuffer:    texture_external;
 
 fn random2(p : vec2f) -> vec2f {
@@ -36,11 +37,11 @@ fn fs( @builtin(position) pos : vec4f ) -> @location(0) vec4f {
   
   // Cellular Noise
   var m_dist : f32 = 1.;
-  var is_mouse : bool = false;
+  var point_color : vec4f;
 
   if (mouse.z == 1.) {
-    is_mouse = true;
     m_dist = length(sc_mouse - sc);
+    point_color = vec4f(mouseColor, .1f);
   }
 
   for (var y = -1; y <= 1; y++) {
@@ -57,17 +58,12 @@ fn fs( @builtin(position) pos : vec4f ) -> @location(0) vec4f {
       let dist : f32 = length(diff);
       if (dist < m_dist) {
         m_dist = dist;
-        is_mouse = false;
+        point_color = textureSampleBaseClampToEdge( videoBuffer, videoSampler, point );
+        point_color = mix(vec4f(1.), point_color, camColor);
       }
     }
   }
-  
-  var noise : vec4f;
-  if (is_mouse) {
-    noise = m_dist * vec4f(mouseColor, 1.);
-  } else {
-    noise = vec4f(m_dist, m_dist, m_dist, 1.);
-  }
+  var noise : vec4f = m_dist * point_color;
 
   // Camera
   let vid = textureSampleBaseClampToEdge( videoBuffer, videoSampler, st );
@@ -76,7 +72,7 @@ fn fs( @builtin(position) pos : vec4f ) -> @location(0) vec4f {
   let fb = textureSample( backBuffer, backSampler, st );
 
   // Output
-  var out = mix(vid, noise, mixer);
+  var out = mix(vid, noise, camMixer);
   out = out * (1 - feedback) + fb * feedback;
   return vec4f( out.rgb, 1. );
 }
