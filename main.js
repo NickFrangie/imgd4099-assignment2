@@ -2,50 +2,71 @@ import { default as seagulls } from './seagulls.js'
 import { default as Video    } from './video.js'
 import { default as Audio    } from './audio.js'
 
-const shader = `
-@group(0) @binding(0) var<uniform> frame: f32;
-@group(0) @binding(1) var<uniform> res:   vec2f;
-@group(0) @binding(2) var<uniform> audio: vec3f;
-@group(0) @binding(3) var<uniform> mouse: vec3f;
-@group(0) @binding(4) var backSampler:    sampler;
-@group(0) @binding(5) var backBuffer:     texture_2d<f32>;
-@group(0) @binding(6) var videoSampler:   sampler;
-@group(1) @binding(0) var videoBuffer:    texture_external;
+import { Pane } from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.1/dist/tweakpane.min.js';
 
-@vertex 
-fn vs( @location(0) input : vec2f ) ->  @builtin(position) vec4f {
-  return vec4f( input, 0., 1.); 
+var mouseX = null;
+var mouseY = null;
+var mouseDown = null;
+    
+document.addEventListener('mousemove', onMouseUpdate, false);
+document.addEventListener('mouseenter', onMouseUpdate, false);
+document.body.onmousedown = (e) => {mouseDown = 1;};
+document.body.onmouseup = (e) => {mouseDown = 0;};
+
+function onMouseUpdate(event) {
+  mouseX = event.pageX;
+  mouseY = event.pageY;
 }
 
-@fragment 
-fn fs( @builtin(position) pos : vec4f ) -> @location(0) vec4f {
-  let vid = textureSampleBaseClampToEdge( videoBuffer, videoSampler, pos.xy / res );
-  let fb  = textureSample( backBuffer, backSampler, pos.xy / res );
-  let out = vid * .05 + fb * .95;
-  return vec4f( out.r, 0.,0. , 1. );
-}`
-
 async function main() {
-  let frame = 0
-
+  // Variables
+  let time = 0;
+  const params = { timeScale: 1, camMixer: .95, camColor: .75, feedback: .8, mouseColor: { r:1, g:0, b:0  } }
+  
+  // Tweakpane
+  const pane = new Pane();
+  pane
+    .addBinding(params, 'timeScale', { min: 0, max: 2 })
+    .on('change',  e => { params.timeScale = e.value; })
+  pane
+    .addBinding(params, 'camMixer', { min: 0, max: 1 })
+    .on('change',  e => { sg.uniforms.camMixer = e.value; })
+  pane
+    .addBinding(params, 'camColor', { min: 0, max: 1 })
+    .on('change',  e => { sg.uniforms.camColor = e.value; })
+  pane
+    .addBinding(params, 'feedback', { min: 0, max: 1 })
+    .on('change',  e => { sg.uniforms.feedback = e.value; })
+  pane
+    .addBinding(params, 'mouseColor', { color: { type:'float' } })
+    .on('change',  e => { sg.uniforms.mouseColor = Object.values(e.value); })
+  
+  // Initialization
+  const sg = await seagulls.init()
+  const frag = await seagulls.import( './frag.wgsl' );
   document.body.onclick = Audio.start
-
   await Video.init()
 
-  const sg = await seagulls.init()
-
+  // Seagulls
   sg.uniforms({ 
-    frame:0, 
+    time:0, 
     res:[window.innerWidth, window.innerHeight],
     audio:[0,0,0],
     mouse:[0,0,0],
+    camMixer: params.camMixer,
+    camColor: params.camColor,
+    feedback: params.feedback,
+    mouseColor: Object.values( params.mouseColor )
   })
   .onframe( ()=> {
-    sg.uniforms.frame = frame++ 
-    sg.uniforms.audio = [ Audio.low, Audio.mid, Audio.high ]
+    time += params.timeScale / 10;
+    
+    sg.uniforms.time = time;
+    sg.uniforms.audio = [ Audio.low, Audio.mid, Audio.high ];
+    sg.uniforms.mouse = [ mouseX, mouseY, mouseDown];
   })
   .textures([ Video.element ]) 
-  .render( shader, { uniforms: ['frame','res', 'audio', 'mouse' ] })
+  .render( frag )
   .run()
 }
 
