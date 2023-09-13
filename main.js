@@ -21,21 +21,23 @@ function onMouseUpdate(event) {
 async function main() {
   // Variables
   let time = 0;
-  let timeScale = 1.;
-  const params = { background: { r:0, g:0, b:0  }, timeScale: timeScale, mixer: .25 }
+  const params = { timeScale: 1, mixer: .5, feedback: .05, mouseColor: { r:0, g:0, b:0  } }
   
   // Tweakpane
   const pane = new Pane();
   pane
-    .addBinding(params, 'background', { color: { type:'float' } })
-    .on('change',  e => { sg.uniforms.color = Object.values(e.value); })
-  pane
     .addBinding(params, 'timeScale', { min: 0, max: 2 })
-    .on('change',  e => { timeScale = e.value; })
+    .on('change',  e => { params.timeScale = e.value; })
   pane
     .addBinding(params, 'mixer', { min: 0, max: 1 })
     .on('change',  e => { sg.uniforms.mixer = e.value; })
-    
+  pane
+    .addBinding(params, 'feedback', { min: 0, max: 1 })
+    .on('change',  e => { sg.uniforms.feedback = e.value; })
+  pane
+    .addBinding(params, 'mouseColor', { color: { type:'float' } })
+    .on('change',  e => { sg.uniforms.mouseColor = Object.values(e.value); })
+  
   // Initialization
   const sg = await seagulls.init()
   const frag = await seagulls.import( './frag.wgsl' );
@@ -48,10 +50,12 @@ async function main() {
     res:[window.innerWidth, window.innerHeight],
     audio:[0,0,0],
     mouse:[0,0,0],
-    mixer:1
+    mixer: params.mixer,
+    feedback: params.feedback,
+    mouseColor: Object.values( params.mouseColor )
   })
   .onframe( ()=> {
-    time += timeScale / 10;
+    time += params.timeScale / 10;
     
     sg.uniforms.time = time;
     sg.uniforms.audio = [ Audio.low, Audio.mid, Audio.high ];
